@@ -522,6 +522,64 @@ func funcSqrt(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper)
 	return simpleFunc(vals, enh, math.Sqrt)
 }
 
+// === step(Vector VectorNode) Vector ===
+func funcStep(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
+	return simpleFunc(vals, enh,
+		func(v float64) float64 {
+			if v > 0 || math.IsInf(v, 1) {
+				return 1
+			}
+			return 0
+		})
+}
+
+// === rect(Vector VectorNode) Vector ===
+// Src: https://en.wikipedia.org/wiki/Rectangular_function
+func funcRect(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
+	a := float64(1)
+	if len(vals) > 1 {
+		a = vals[1].(Vector)[0].Point.V
+	}
+	for _, el := range vals[0].(Vector) {
+		var out float64
+		switch {
+		case el.V > -a && el.V < a:
+			out = 1
+		case el.V == a:
+			out = 0.5
+		case el.V == -a:
+			out = -0.5
+		default:
+			out = 0
+		}
+		enh.Out = append(enh.Out, Sample{
+			Metric: enh.DropMetricName(el.Metric),
+			Point:  Point{V: out},
+		})
+	}
+	return enh.Out
+}
+
+// === pulse(Vector VectorNode) Vector ===
+// Src: https://en.wikipedia.org/wiki/Fourier_transform
+func funcPulse(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
+	a := float64(1)
+	if len(vals) > 1 {
+		a = vals[1].(Vector)[0].Point.V
+	}
+	for _, el := range vals[0].(Vector) {
+		out := float64(0)
+		if el.V > 0 && el.V <= a {
+			out = 1
+		}
+		enh.Out = append(enh.Out, Sample{
+			Metric: enh.DropMetricName(el.Metric),
+			Point:  Point{V: out},
+		})
+	}
+	return enh.Out
+}
+
 // === ln(Vector parser.ValueTypeVector) Vector ===
 func funcLn(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
 	return simpleFunc(vals, enh, math.Log)
@@ -537,7 +595,26 @@ func funcLog10(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper
 	return simpleFunc(vals, enh, math.Log10)
 }
 
-// === timestamp(Vector parser.ValueTypeVector) Vector ===
+// === ord(Vector VectorNode) Vector ===
+func funcOrd(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
+	return simpleFunc(vals, enh,
+		func(v float64) float64 {
+			if v == 0 {
+				return 0
+			} else if math.IsInf(v, 1) {
+				return 2
+			} else if math.IsInf(v, -1) {
+				return -2
+			} else if v > 0 {
+				return 1
+			} else if v < 0 {
+				return -1
+			}
+			return v
+		})
+}
+
+/// === timestamp(Vector parser.ValueTypeVector) Vector ===
 func funcTimestamp(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
 	vec := vals[0].(Vector)
 	for _, el := range vec {
@@ -918,7 +995,10 @@ var FunctionCalls = map[string]FunctionCall{
 	"min_over_time":      funcMinOverTime,
 	"minute":             funcMinute,
 	"month":              funcMonth,
+	"ord":                funcOrd,
 	"predict_linear":     funcPredictLinear,
+	"pulse":              funcPulse,
+	"rect":               funcRect,
 	"quantile_over_time": funcQuantileOverTime,
 	"rate":               funcRate,
 	"resets":             funcResets,
@@ -929,6 +1009,7 @@ var FunctionCalls = map[string]FunctionCall{
 	"sqrt":               funcSqrt,
 	"stddev_over_time":   funcStddevOverTime,
 	"stdvar_over_time":   funcStdvarOverTime,
+	"step":               funcStep,
 	"sum_over_time":      funcSumOverTime,
 	"time":               funcTime,
 	"timestamp":          funcTimestamp,

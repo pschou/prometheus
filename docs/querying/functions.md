@@ -317,6 +317,12 @@ of the given times in UTC. Returned values are from 0 to 59.
 of the given times in UTC. Returned values are from 1 to 12, where 1 means
 January etc.
 
+## `ord()`
+
+`ord(v instant-vector)` ord classifies v and returns:
+-2 if -Inf == v, -1 if -Inf < v < 0, 0 if v == 0, 1 if 0 < v < +Inf, and 2 if v == +Inf.
+Read more about thie technique: https://golang.org/pkg/math/big/?m=all#Float.ord
+
 ## `predict_linear()`
 
 `predict_linear(v range-vector, t scalar)` predicts the value of time series
@@ -324,6 +330,13 @@ January etc.
 regression](https://en.wikipedia.org/wiki/Simple_linear_regression).
 
 `predict_linear` should only be used with gauges.
+
+## `pulse()`
+
+`pulse(v instant-vector, a quantile)` pulse classifies v and returns:
+0 if v <= 0, -1 if 0 < v <= a, and 0 if v > a.
+If a is not specified, it is set to 1.
+Read more about this technique: https://en.wikipedia.org/wiki/Pulse_function
 
 ## `rate()`
 
@@ -347,6 +360,13 @@ Note that when combining `rate()` with an aggregation operator (e.g. `sum()`)
 or a function aggregating over time (any function ending in `_over_time`),
 always take a `rate()` first, then aggregate. Otherwise `rate()` cannot detect
 counter resets when your target restarts.
+
+## `rect()`
+
+`rect(v instant-vector, a quantile)` rect classifies v and returns:
+1 if abs(v) < a, 0.5 if abs(v) = a, otherwise 0.
+If a is not specified, it is set to 1.
+Read more about thie technique: https://en.wikipedia.org/wiki/Rectangular_function
 
 ## `resets()`
 
@@ -382,6 +402,10 @@ Same as `sort`, but sorts in descending order.
 ## `sqrt()`
 
 `sqrt(v instant-vector)` calculates the square root of all elements in `v`.
+
+## `step()`
+
+`step(v instant-vector)` returns the step function where 1 if v > 0, otherwise 0.
 
 ## `time()`
 

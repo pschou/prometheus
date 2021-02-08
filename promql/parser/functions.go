@@ -186,9 +186,19 @@ var Functions = map[string]*Function{
 		Variadic:   1,
 		ReturnType: ValueTypeVector,
 	},
+	"ord": {
+		Name:       "ord",
+		ArgTypes:   []ValueType{ValueTypeVector},
+		ReturnType: ValueTypeVector,
+	},
 	"predict_linear": {
 		Name:       "predict_linear",
 		ArgTypes:   []ValueType{ValueTypeMatrix, ValueTypeScalar},
+		ReturnType: ValueTypeVector,
+	},
+	"pulse": {
+		Name:       "pulse",
+		ArgTypes:   []ValueType{ValueTypeVector},
 		ReturnType: ValueTypeVector,
 	},
 	"quantile_over_time": {
@@ -199,6 +209,11 @@ var Functions = map[string]*Function{
 	"rate": {
 		Name:       "rate",
 		ArgTypes:   []ValueType{ValueTypeMatrix},
+		ReturnType: ValueTypeVector,
+	},
+	"rect": {
+		Name:       "rect",
+		ArgTypes:   []ValueType{ValueTypeVector},
 		ReturnType: ValueTypeVector,
 	},
 	"resets": {
@@ -240,6 +255,11 @@ var Functions = map[string]*Function{
 	"stdvar_over_time": {
 		Name:       "stdvar_over_time",
 		ArgTypes:   []ValueType{ValueTypeMatrix},
+		ReturnType: ValueTypeVector,
+	},
+	"step": {
+		Name:       "step",
+		ArgTypes:   []ValueType{ValueTypeVector},
 		ReturnType: ValueTypeVector,
 	},
 	"sum_over_time": {
