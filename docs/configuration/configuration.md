@@ -830,7 +830,7 @@ tls_config:
 File-based service discovery provides a more generic way to configure static targets
 and serves as an interface to plug in custom service discovery mechanisms.
 
-It reads a set of files containing a list of zero or more
+It reads a set of local or remote files containing a list of zero or more
 `<static_config>`s. Changes to all defined files are detected via disk watches
 and applied immediately. Files may be provided in YAML or JSON format. Only
 changes resulting in well-formed target groups are applied.
@@ -880,6 +880,8 @@ files:
 
 Where `<filename_pattern>` may be a path ending in `.json`, `.yml` or `.yaml`. The last path segment
 may contain a single `*` that matches any character sequence, e.g. `my/path/tg_*.json`.
+
+Remote paths are specified using an exact URL path with the prefix `http://` or `https://`.  These are re-read on the refresh_interval.
 
 ### `<gce_sd_config>`
 
