@@ -16,8 +16,10 @@ package file
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -63,6 +65,35 @@ func newTestRunner(t *testing.T) *testRunner {
 		done:    make(chan struct{}),
 		stopped: make(chan struct{}),
 		tgs:     make(map[string]*targetgroup.Group),
+	}
+}
+
+func TestRemoteFile(t *testing.T) {
+	ch := make(chan []*targetgroup.Group)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		NewDiscovery(
+			&SDConfig{
+				Files: []string{
+					"https://raw.githubusercontent.com/prometheus/prometheus/master/discovery/file/fixtures/valid.json",
+				},
+				// Setting a high refresh interval to make sure that the test only
+				// runs once
+				RefreshInterval: model.Duration(1 * time.Hour),
+			},
+			nil,
+		).Run(ctx, ch)
+	}()
+	select {
+	case remote := <-ch:
+		b1, _ := json.Marshal(remote)
+		test := "[{\"Targets\":[{\"__address__\":\"localhost:9090\"},{\"__address__\":\"example.org:443\"}],\"Labels\":{\"__meta_filepath\":\"https://raw.githubusercontent.com/prometheus/prometheus/master/discovery/file/fixtures/valid.json\",\"foo\":\"bar\"},\"Source\":\"https://raw.githubusercontent.com/prometheus/prometheus/master/discovery/file/fixtures/valid.json:0\"},{\"Targets\":[{\"__address__\":\"my.domain\"}],\"Labels\":{\"__meta_filepath\":\"https://raw.githubusercontent.com/prometheus/prometheus/master/discovery/file/fixtures/valid.json\"},\"Source\":\"https://raw.githubusercontent.com/prometheus/prometheus/master/discovery/file/fixtures/valid.json:1\"}]"
+		if string(b1) != test {
+			t.Fatalf("Remote load mismatch")
+		}
+	case <-time.After(5 * time.Second):
+		fmt.Println("Remote file test skipped")
 	}
 }
 

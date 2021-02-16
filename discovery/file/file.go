@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -211,6 +212,11 @@ func NewDiscovery(conf *SDConfig, logger log.Logger) *Discovery {
 func (d *Discovery) listFiles() []string {
 	var paths []string
 	for _, p := range d.paths {
+		// Add remote file paths.  The suffix will be tested later.
+		if strings.HasPrefix(p, "http://") || strings.HasPrefix(p, "https://") {
+			paths = append(paths, p)
+			continue
+		}
 		files, err := filepath.Glob(p)
 		if err != nil {
 			level.Error(d.logger).Log("msg", "Error expanding glob", "glob", p, "err", err)
@@ -228,6 +234,10 @@ func (d *Discovery) watchFiles() {
 		panic("no watcher configured")
 	}
 	for _, p := range d.paths {
+		// Ignore watching remote files
+		if strings.HasPrefix(p, "http://") || strings.HasPrefix(p, "https://") {
+			continue
+		}
 		if idx := strings.LastIndex(p, "/"); idx > -1 {
 			p = p[:idx]
 		} else {
@@ -377,20 +387,47 @@ func (d *Discovery) refresh(ctx context.Context, ch chan<- []*targetgroup.Group)
 // readFile reads a JSON or YAML list of targets groups from the file, depending on its
 // file extension. It returns full configuration target groups.
 func (d *Discovery) readFile(filename string) ([]*targetgroup.Group, error) {
-	fd, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer fd.Close()
+	fmt.Println("readfile called", filename)
+	var content []byte
+	var modTime time.Time
+	if strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://") {
+		resp, err := http.Get(filename)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
 
-	content, err := ioutil.ReadAll(fd)
-	if err != nil {
-		return nil, err
-	}
+		LastModified := resp.Header.Get("Last-Modified")
+		if len(LastModified) > 24 {
+			modTime, err = time.Parse(time.RFC1123, LastModified)
+			if err != nil {
+				modTime = time.Now()
+			}
+		} else {
+			modTime = time.Now()
+		}
 
-	info, err := fd.Stat()
-	if err != nil {
-		return nil, err
+		content, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		fd, err := os.Open(filename)
+		if err != nil {
+			return nil, err
+		}
+		defer fd.Close()
+
+		content, err = ioutil.ReadAll(fd)
+		if err != nil {
+			return nil, err
+		}
+
+		info, err := fd.Stat()
+		if err != nil {
+			return nil, err
+		}
+		modTime = info.ModTime()
 	}
 
 	var targetGroups []*targetgroup.Group
@@ -410,7 +447,7 @@ func (d *Discovery) readFile(filename string) ([]*targetgroup.Group, error) {
 
 	for i, tg := range targetGroups {
 		if tg == nil {
-			err = errors.New("nil target group item found")
+			err := errors.New("nil target group item found")
 			return nil, err
 		}
 
@@ -421,7 +458,7 @@ func (d *Discovery) readFile(filename string) ([]*targetgroup.Group, error) {
 		tg.Labels[fileSDFilepathLabel] = model.LabelValue(filename)
 	}
 
-	d.writeTimestamp(filename, float64(info.ModTime().Unix()))
+	d.writeTimestamp(filename, float64(modTime.Unix()))
 
 	return targetGroups, nil
 }
