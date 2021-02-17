@@ -533,33 +533,6 @@ func funcStep(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper)
 		})
 }
 
-// === rect(Vector VectorNode) Vector ===
-// Src: https://en.wikipedia.org/wiki/Rectangular_function
-func funcRect(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {
-	a := float64(1)
-	if len(vals) > 1 {
-		a = vals[1].(Vector)[0].Point.V
-	}
-	for _, el := range vals[0].(Vector) {
-		var out float64
-		switch {
-		case el.V > -a && el.V < a:
-			out = 1
-		case el.V == a:
-			out = 0.5
-		case el.V == -a:
-			out = -0.5
-		default:
-			out = 0
-		}
-		enh.Out = append(enh.Out, Sample{
-			Metric: enh.DropMetricName(el.Metric),
-			Point:  Point{V: out},
-		})
-	}
-	return enh.Out
-}
-
 // === pulse(Vector VectorNode) Vector ===
 // Src: https://en.wikipedia.org/wiki/Fourier_transform
 func funcPulse(vals []parser.Value, args parser.Expressions, enh *EvalNodeHelper) Vector {

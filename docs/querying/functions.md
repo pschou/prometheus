@@ -361,13 +361,6 @@ or a function aggregating over time (any function ending in `_over_time`),
 always take a `rate()` first, then aggregate. Otherwise `rate()` cannot detect
 counter resets when your target restarts.
 
-## `rect()`
-
-`rect(v instant-vector, a quantile)` rect classifies v and returns:
-1 if abs(v) < a, 0.5 if abs(v) = a, otherwise 0.
-If a is not specified, it is set to 1.
-Read more about thie technique: https://en.wikipedia.org/wiki/Rectangular_function
-
 ## `resets()`
 
 For each input time series, `resets(v range-vector)` returns the number of
